@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -15,6 +16,15 @@ type Result struct {
 	Stdout  string
 	Stderr  string
 	Code    int
+}
+
+// pathPrefix returns the PATH entries RunCmd prepends on the given OS:
+// Homebrew locations on macOS, the conventional binary locations elsewhere.
+func pathPrefix(goos string) string {
+	if goos == "darwin" {
+		return "/opt/homebrew/bin:/usr/local/bin"
+	}
+	return "/usr/local/bin:/usr/bin:/bin"
 }
 
 // RunCmd executes a shell command, optionally in workingDir.
@@ -35,11 +45,11 @@ func RunCmd(command string, workingDir string) Result {
 		}
 	}
 
-	macPaths := "/opt/homebrew/bin:/usr/local/bin"
+	extraPaths := pathPrefix(runtime.GOOS)
 	if pathVar != "" {
-		pathVar = macPaths + ":" + pathVar
+		pathVar = extraPaths + ":" + pathVar
 	} else {
-		pathVar = macPaths
+		pathVar = extraPaths
 	}
 
 	envEntry := "PATH=" + pathVar
